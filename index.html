@@ -1,0 +1,580 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Phoenix | 未来を共創するテクノロジーパートナー</title>
+    <meta name="description" content="AI時代の受託開発。あなたのビジョンを圧倒的なクオリティで実現します。">
+    
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&family=Noto+Sans+JP:wght@300;400;500;700&display=swap" rel="stylesheet">
+    
+    <!-- Libraries -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+
+    <style>
+        :root {
+            --bg-color: #050505;
+            --text-primary: #ffffff;
+            --text-secondary: #888888;
+            --accent-color: #3b82f6;
+            --accent-gradient: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
+            --glass-bg: rgba(255, 255, 255, 0.03);
+            --glass-border: rgba(255, 255, 255, 0.1);
+            --noise-url: url('data:image/svg+xml,%3Csvg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg"%3E%3Cfilter id="noiseFilter"%3E%3CfeTurbulence type="fractalNoise" baseFrequency="0.65" numOctaves="3" stitchTiles="stitch"/%3E%3C/filter%3E%3Crect width="100%25" height="100%25" filter="url(%23noiseFilter)" opacity="0.05"/%3E%3C/svg%3E');
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-primary);
+            font-family: 'Inter', 'Noto Sans JP', sans-serif;
+            overflow-x: hidden;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        /* Noise Overlay */
+        .noise-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: var(--noise-url);
+            pointer-events: none;
+            z-index: 9999;
+            opacity: 0.4;
+        }
+
+        /* Typography */
+        h1, h2, h3 {
+            font-weight: 800;
+            letter-spacing: -0.03em;
+            line-height: 1.1;
+        }
+
+        p {
+            color: var(--text-secondary);
+            line-height: 1.8;
+            font-weight: 300;
+        }
+
+        a {
+            text-decoration: none;
+            color: inherit;
+            transition: all 0.3s ease;
+        }
+
+        /* Header */
+        header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            padding: 2rem 4rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 100;
+            mix-blend-mode: difference;
+        }
+
+        .logo {
+            font-size: 1.5rem;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+        }
+
+        nav ul {
+            display: flex;
+            gap: 3rem;
+            list-style: none;
+        }
+
+        nav a {
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            opacity: 0.7;
+            position: relative;
+        }
+
+        nav a::after {
+            content: '';
+            position: absolute;
+            bottom: -5px;
+            left: 0;
+            width: 0;
+            height: 1px;
+            background: white;
+            transition: width 0.3s ease;
+        }
+
+        nav a:hover {
+            opacity: 1;
+        }
+
+        nav a:hover::after {
+            width: 100%;
+        }
+
+        /* Hero Section */
+        .hero {
+            position: relative;
+            height: 100vh;
+            width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+
+        #canvas-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+        }
+
+        .hero-content {
+            position: relative;
+            z-index: 1;
+            text-align: center;
+            padding: 0 2rem;
+            max-width: 1200px;
+        }
+
+        .hero-title {
+            font-size: clamp(3rem, 8vw, 7rem);
+            background: linear-gradient(to bottom, #ffffff, #888888);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            margin-bottom: 1.5rem;
+            opacity: 0;
+            transform: translateY(50px);
+        }
+
+        .hero-subtitle {
+            font-size: clamp(1rem, 2vw, 1.5rem);
+            max-width: 600px;
+            margin: 0 auto 3rem;
+            opacity: 0;
+            transform: translateY(30px);
+        }
+
+        .btn-glow {
+            display: inline-block;
+            padding: 1rem 2.5rem;
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 50px;
+            background: rgba(255,255,255,0.05);
+            backdrop-filter: blur(10px);
+            color: white;
+            font-size: 0.9rem;
+            letter-spacing: 0.05em;
+            transition: all 0.4s ease;
+            opacity: 0;
+            transform: translateY(20px);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn-glow:hover {
+            background: rgba(255,255,255,0.1);
+            border-color: rgba(255,255,255,0.4);
+            box-shadow: 0 0 30px rgba(59, 130, 246, 0.3);
+        }
+
+        /* Section Styling */
+        section {
+            padding: 10rem 2rem;
+            position: relative;
+            z-index: 2;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .section-header {
+            margin-bottom: 6rem;
+        }
+
+        .section-label {
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 0.2em;
+            color: var(--accent-color);
+            display: block;
+            margin-bottom: 1rem;
+        }
+
+        .section-title {
+            font-size: clamp(2.5rem, 5vw, 4rem);
+            margin-bottom: 2rem;
+        }
+
+        /* Services */
+        .services-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+        }
+
+        .service-card {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            padding: 3rem;
+            border-radius: 24px;
+            transition: transform 0.4s ease;
+        }
+
+        .service-card:hover {
+            transform: translateY(-10px);
+            border-color: rgba(255,255,255,0.2);
+        }
+
+        .service-icon {
+            font-size: 2rem;
+            margin-bottom: 2rem;
+            background: var(--accent-gradient);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+
+        .service-card h3 {
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+        }
+
+        /* Portfolio */
+        .portfolio-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 4rem;
+        }
+
+        .portfolio-item {
+            position: relative;
+            aspect-ratio: 4/3;
+            border-radius: 24px;
+            overflow: hidden;
+            cursor: pointer;
+        }
+
+        .portfolio-img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.7s ease;
+            filter: grayscale(100%);
+        }
+
+        .portfolio-item:hover .portfolio-img {
+            transform: scale(1.05);
+            filter: grayscale(0%);
+        }
+
+        .portfolio-info {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            padding: 2rem;
+            background: linear-gradient(to top, rgba(0,0,0,0.9), transparent);
+            transform: translateY(20px);
+            opacity: 0;
+            transition: all 0.4s ease;
+        }
+
+        .portfolio-item:hover .portfolio-info {
+            transform: translateY(0);
+            opacity: 1;
+        }
+
+        /* CTA */
+        .cta-section {
+            text-align: center;
+            padding: 15rem 2rem;
+            background: radial-gradient(circle at center, rgba(59, 130, 246, 0.1), transparent 70%);
+        }
+
+        /* Footer */
+        footer {
+            border-top: 1px solid var(--glass-border);
+            padding: 4rem 2rem;
+            text-align: center;
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            header {
+                padding: 1.5rem 2rem;
+            }
+            
+            nav {
+                display: none; /* Simplified for mobile */
+            }
+
+            .portfolio-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="noise-overlay"></div>
+
+    <header>
+        <div class="logo">PHOENIX</div>
+        <nav>
+            <ul>
+                <li><a href="#services">Services</a></li>
+                <li><a href="#work">Work</a></li>
+                <li><a href="#contact">Contact</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <section class="hero">
+        <div id="canvas-container"></div>
+        <div class="hero-content">
+            <h1 class="hero-title">Future <br>Co-Creation</h1>
+            <p class="hero-subtitle">
+                AI時代の受託開発。<br>
+                あなたのビジョンを圧倒的なクオリティで実現します。
+            </p>
+            <a href="#contact" class="btn-glow">START PROJECT</a>
+        </div>
+    </section>
+
+    <section id="services">
+        <div class="container">
+            <div class="section-header">
+                <span class="section-label">EXPERTISE</span>
+                <h2 class="section-title">Cutting-Edge Tech</h2>
+            </div>
+            <div class="services-grid">
+                <div class="service-card">
+                    <div class="service-icon">⚡</div>
+                    <h3>Gemini 3.0 Pro Integration</h3>
+                    <p>最新のAIモデルを活用した高度な推論機能と自動化ソリューションの実装。ビジネスプロセスを根本から変革します。</p>
+                </div>
+                <div class="service-card">
+                    <div class="service-icon">🛡️</div>
+                    <h3>Secured by Design</h3>
+                    <p>開発初期段階からセキュリティを組み込むアーキテクチャ設計。堅牢性と柔軟性を兼ね備えたシステム構築。</p>
+                </div>
+                <div class="service-card">
+                    <div class="service-icon">💎</div>
+                    <h3>Modern UI/UX</h3>
+                    <p>Next.js, React, WebGLを駆使し、操作性と美しさを両立した、記憶に残るユーザー体験を提供します。</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="work">
+        <div class="container">
+            <div class="section-header">
+                <span class="section-label">SELECTED WORK</span>
+                <h2 class="section-title">Digital Craftsmanship</h2>
+            </div>
+            <div class="portfolio-grid">
+                <!-- Placeholder images from unsplash source for demo -->
+                <div class="portfolio-item">
+                    <img src="https://images.unsplash.com/photo-1451187580459-43490279c0fa?q=80&w=2072&auto=format&fit=crop" alt="Project 1" class="portfolio-img">
+                    <div class="portfolio-info">
+                        <h3>Global Fintech Platform</h3>
+                        <p>Secure, Real-time Architecture</p>
+                    </div>
+                </div>
+                <div class="portfolio-item">
+                    <img src="https://images.unsplash.com/photo-1550751827-4bd374c3f58b?q=80&w=2070&auto=format&fit=crop" alt="Project 2" class="portfolio-img">
+                    <div class="portfolio-info">
+                        <h3>AI Analytics Dashboard</h3>
+                        <p>Data Visualization & Prediction</p>
+                    </div>
+                </div>
+                <div class="portfolio-item">
+                    <img src="https://images.unsplash.com/photo-1558655146-d09347e0b708?q=80&w=1964&auto=format&fit=crop" alt="Project 3" class="portfolio-img">
+                    <div class="portfolio-info">
+                        <h3>Luxury E-Commerce</h3>
+                        <p>Immersive Shopping Experience</p>
+                    </div>
+                </div>
+                <div class="portfolio-item">
+                    <img src="https://images.unsplash.com/photo-1519389950473-47ba0277781c?q=80&w=2070&auto=format&fit=crop" alt="Project 4" class="portfolio-img">
+                    <div class="portfolio-info">
+                        <h3>Smart City Infrastructure</h3>
+                        <p>IoT Integration System</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="contact" class="cta-section">
+        <div class="container">
+            <h2 class="section-title">Ready to transcend?</h2>
+            <p style="margin-bottom: 3rem; max-width: 600px; margin-left: auto; margin-right: auto;">
+                あなたのプロジェクトを、想像を超える次元へ。<br>
+                まずは無料のコンサルテーションから。
+            </p>
+            <a href="mailto:contact@phoenix.inc" class="btn-glow">GET IN TOUCH</a>
+        </div>
+    </section>
+
+    <footer>
+        <p>&copy; 2025 PHOENIX Inc. All Rights Reserved.</p>
+    </footer>
+
+    <script>
+        // 3D Background with Three.js
+        const initThree = () => {
+            const container = document.getElementById('canvas-container');
+            const scene = new THREE.Scene();
+            const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+            
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            container.appendChild(renderer.domElement);
+
+            // Particles
+            const geometry = new THREE.BufferGeometry();
+            const count = 2000;
+            const posArray = new Float32Array(count * 3);
+
+            for(let i = 0; i < count * 3; i++) {
+                posArray[i] = (Math.random() - 0.5) * 15;
+            }
+
+            geometry.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
+
+            const material = new THREE.PointsMaterial({
+                size: 0.015,
+                color: 0x3b82f6,
+                transparent: true,
+                opacity: 0.8,
+            });
+
+            const particlesMesh = new THREE.Points(geometry, material);
+            scene.add(particlesMesh);
+
+            camera.position.z = 3;
+
+            // Mouse Interaction
+            let mouseX = 0;
+            let mouseY = 0;
+            let targetX = 0;
+            let targetY = 0;
+
+            const windowHalfX = window.innerWidth / 2;
+            const windowHalfY = window.innerHeight / 2;
+
+            document.addEventListener('mousemove', (event) => {
+                mouseX = (event.clientX - windowHalfX);
+                mouseY = (event.clientY - windowHalfY);
+            });
+
+            const clock = new THREE.Clock();
+
+            const animate = () => {
+                targetX = mouseX * 0.001;
+                targetY = mouseY * 0.001;
+
+                const elapsedTime = clock.getElapsedTime();
+
+                particlesMesh.rotation.y = .1 * elapsedTime;
+                particlesMesh.rotation.x += .05 * (targetY - particlesMesh.rotation.x);
+                particlesMesh.rotation.y += .05 * (targetX - particlesMesh.rotation.y);
+
+                // Wave effect
+                const positions = particlesMesh.geometry.attributes.position.array;
+                for(let i = 0; i < count; i++) {
+                    const i3 = i * 3;
+                    const x = geometry.attributes.position.array[i3];
+                    // positions[i3 + 1] = Math.sin(elapsedTime + x) * 0.5;
+                }
+                particlesMesh.geometry.attributes.position.needsUpdate = true;
+
+                renderer.render(scene, camera);
+                requestAnimationFrame(animate);
+            };
+
+            animate();
+
+            window.addEventListener('resize', () => {
+                camera.aspect = window.innerWidth / window.innerHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(window.innerWidth, window.innerHeight);
+            });
+        }
+
+        // Animations with GSAP
+        const initAnimations = () => {
+            gsap.registerPlugin(ScrollTrigger);
+
+            // Hero Animations
+            const tl = gsap.timeline();
+            tl.to('.hero-title', { opacity: 1, y: 0, duration: 1, ease: 'power3.out' })
+              .to('.hero-subtitle', { opacity: 1, y: 0, duration: 1, ease: 'power3.out' }, '-=0.5')
+              .to('.btn-glow', { opacity: 1, y: 0, duration: 0.8, ease: 'back.out(1.7)' }, '-=0.5');
+
+            // Scroll Animations for Services
+            gsap.utils.toArray('.service-card').forEach((card, i) => {
+                gsap.from(card, {
+                    scrollTrigger: {
+                        trigger: card,
+                        start: 'top 85%',
+                        toggleActions: 'play none none reverse'
+                    },
+                    y: 50,
+                    opacity: 0,
+                    duration: 0.8,
+                    delay: i * 0.2,
+                    ease: 'power3.out'
+                });
+            });
+
+            // Scroll Animations for Portfolio
+            gsap.utils.toArray('.portfolio-item').forEach((item, i) => {
+                gsap.from(item, {
+                    scrollTrigger: {
+                        trigger: item,
+                        start: 'top 85%',
+                        toggleActions: 'play none none reverse'
+                    },
+                    y: 50,
+                    opacity: 0,
+                    duration: 1,
+                    delay: i * 0.1,
+                    ease: 'power2.out'
+                });
+            });
+        }
+
+        window.addEventListener('DOMContentLoaded', () => {
+            initThree();
+            initAnimations();
+        });
+    </script>
+</body>
+</html>
